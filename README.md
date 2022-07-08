@@ -14,3 +14,39 @@ The Power Steering appears to operate when it can see an RPM message indicating 
 If you're not considering an electric conversion, the info here could prove useful if you wanted to build your own CAN driven dashboard, for example.  Or, perhaps you are considering putting a different engine in one and are wondering how to make the dash & power steering work?
 
 Feel free to copy, share, change, eat - whatever you like!
+
+There are two tools I've used for the reverse engineering:
+CAN_Infrequently_Changing.ino
+  This compiles a list of CAN messages received as well as keeping a count of how many times the
+  data for that message has changed.  If more than 10 times (value seems to work OK), it no longer prints the 
+  message data.
+
+  If you leave it to settle for a couple of mins, so it is ignoring all the frequent update messages then clear
+  the serial monitor window, anything that pops up has changed just then.
+
+  This is ideal for discovering the codes for switches & things like that
+  
+CAN_RecordAndPlayback.ino
+  This stores a block of 50 messages (all I could fit in an Arduino Nano).  When it's got 50, 
+  it pauses for 30 sec then starts playing them back.  
+  
+  If you switch on the ignition, wait until it's got a block of 50, switch off the ignition then 
+  unplug the ECU, when it starts playing back, you will see the results of what that block of messages do
+  
+  In the code, there are two lines Offset = 150; and GetCount = 50;
+  Offset is the number of messages received before it starts filling up the block of data.  Start with 0, then 50, 100, 150 etc
+  GetCount is the number of messages it will record.
+  
+  There were a few values, such as the fuel level which the first tool did not identify.  
+  Keep repeating in blocks of 50 until you find the thing you're interested in, then keep reducing the size of GetCount 
+  until you've narrowed it down to one message.
+  It's a bit labourious - but can work really well!
+  
+CAN_Polaris_Read_Write.ino
+  This encapsulates the results I've found so far (everything except the scrolling text messages sent to the dash)
+  It prints data like this in the serial monitor:
+  Gear=P|Speed=0|RPM=0|CEL=255|Fuel=112|4WD=2WD|DIFF=LOCK|Temp=17|Gas=25|PkBrk=APP|FtBrk=REL|Belt=SEC|Msg=
+  Gear=P|Speed=0|RPM=0|CEL=255|Fuel=112|4WD=2WD|DIFF=LOCK|Temp=17|Gas=25|PkBrk=APP|FtBrk=REL|Belt=SEC|Msg=
+  Gear=P|Speed=0|RPM=0|CEL=255|Fuel=112|4WD=2WD|DIFF=LOCK|Temp=17|Gas=25|PkBrk=REL|FtBrk=REL|Belt=SEC|Msg=
+
+If you uncomment out the lines starting "CAN.sendMsgBuf", it will generate data for that function & send it on the Bus.  These will only be useful if you unplug the ECU, as the ECU will also be sending it's own versions of the data - which confuses the display.  Use these to spoof data from your Electric drive / new engine.
